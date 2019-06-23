@@ -181,7 +181,9 @@ function Write-Header($message) {
 
 
 Task GenerateVersion {
-	$tag = exec{ & git describe --exact-match --abbrev=0} | Out-String
+
+	# get git last tag
+	$tag = exec{ & git describe --tags --abbrev=0} | Out-String
 
 	if ([string]::IsNullOrEmpty($tag))
     {
