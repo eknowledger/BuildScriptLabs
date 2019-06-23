@@ -24,7 +24,7 @@ Task CI.Build -Depends Clean, Debug.Build, Compile.Assembly
 
 
 
-Task Compile.Assembly -Depends Requires.BuildType, Requires.MSBuild, Requires.BuildDir {
+Task Compile.Assembly -Depends Requires.BuildType, Requires.MSBuild, Requires.BuildDir, GenerateVersionInfo {
 
     exec { & $msbuildExe /p:Configuration=$buildType ".\BuildScriptLabs.sln" /verbosity:minimal /fileLogger /flp:verbosity=detailed`;logfile=$buildDir\BuildScriptLabs.txt }
 }
@@ -176,3 +176,62 @@ function Write-Header($message) {
     $divider = "-" * ($message.Length + 4)
     Write-Output "`r`n$divider`r`n  $message`r`n$divider`r`n"
 }
+
+
+
+
+Task GenerateVersion {
+	$tag = exec{ & git describe --exact-match --abbrev=0} | Out-String
+
+	if ([string]::IsNullOrEmpty($tag))
+    {
+		Write-Host "No Tag Found, using default value"
+      $result = "1.0.0"
+    }
+	
+	$tag = $tag -replace "`n","" -replace "`r",""
+
+	$script:version = $tag
+	
+	# Get current branch
+	$branch = @{ $true = $env:APPVEYOR_REPO_BRANCH; $false = $(git symbolic-ref --short -q HEAD) }[$env:APPVEYOR_REPO_BRANCH -ne $NULL];
+	# get total number of commit on the current branch
+	$localRevision = $(git rev-list --count $branch)
+	
+	#get last commit hash on the branch
+	$commitHash = $(git rev-parse --short $branch)
+
+	# compute revision number for assemblies
+	$revision = @{ $true = "{0:00000}" -f [convert]::ToInt32("0" + $env:APPVEYOR_BUILD_NUMBER, 10); $false = $localRevision }[$env:APPVEYOR_BUILD_NUMBER -ne $NULL];
+
+	# get version friendly name of Branch
+	$branchShort = "$($branch.Substring(0, [math]::Min(10,$branch.Length)))"
+
+	$suffix = @{ $true = "ci-$branchShort-$commitHash"; $false = "local-$branchShort-$commitHash"}[$env:APPVEYOR_BUILD_NUMBER -ne $NULL]
+
+	$script:patchVersion = $revision 
+	$script:suffixVersion = $suffix
+
+
+	echo "Branch: $branch"
+	echo "Version: $tag"
+	echo "Revision: $revision"
+	echo "Suffix: $suffix" 
+}
+
+
+# Generate a VersionInfo.cs file for this build
+Task GenerateVersionInfo -Depends GenerateVersion {
+    foreach($assemblyInfo in (get-childitem $srcDir\AssemblyInfo.cs -recurse)) {
+        $versionInfo = Join-Path $assemblyInfo.Directory "VersionInfo.cs"
+        set-content $versionInfo -encoding UTF8 `
+            "// Generated file - do not modify",
+            "using System.Reflection;",
+            "[assembly: AssemblyVersion(`"$version`")]",
+            "[assembly: AssemblyFileVersion(`"$version.$patchVersion`")]",
+            "[assembly: AssemblyInformationalVersion(`"$version.$patchVersion.$suffixVersion`")]"
+        Write-Host "Generated $versionInfo"
+    }
+}
+
+
