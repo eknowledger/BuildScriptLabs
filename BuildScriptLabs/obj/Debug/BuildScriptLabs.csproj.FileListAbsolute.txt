@@ -1,8 +1,0 @@
-C:\workspace\Projects\BuildScriptLabs\buildscriptlabs\bin\Debug\BuildScriptLabs.dll
-C:\workspace\Projects\BuildScriptLabs\buildscriptlabs\bin\Debug\BuildScriptLabs.pdb
-C:\workspace\Projects\BuildScriptLabs\buildscriptlabs\obj\Debug\BuildScriptLabs.csprojAssemblyReference.cache
-C:\workspace\Projects\BuildScriptLabs\buildscriptlabs\obj\Debug\BuildScriptLabs.csproj.CoreCompileInputs.cache
-C:\workspace\Projects\BuildScriptLabs\buildscriptlabs\obj\Debug\BuildScriptLabs.dll
-C:\workspace\Projects\BuildScriptLabs\buildscriptlabs\obj\Debug\BuildScriptLabs.pdb
-C:\workspace\Projects\BuildScriptLabs\build\Debug\BuildScriptLabs.dll
-C:\workspace\Projects\BuildScriptLabs\build\Debug\BuildScriptLabs.pdb

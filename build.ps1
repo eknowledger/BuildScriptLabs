@@ -1,46 +1,51 @@
-#
-# PSake build script for Niche Commandline library
-#
+# ====================================================================================================
+# PSake build script
+# Author: Ahmed Elmalt
+# Inspired by: https://github.com/theunrepentantgeek/Niche.CommandLineProcessor/blob/master/build.ps1
+#			   https://github.com/psake/psake/blob/master/build.ps1
+# ====================================================================================================
 properties {
     $baseDir = resolve-path .\
     $buildDir = "$baseDir\build"
-	$build_artifacts_dir = "$build_dir\artifacts\"
 	$srcDir = resolve-path $baseDir
+	$solutionFile ="BuildScriptLabs"
+	$solutionFilePath ="$baseDir\$solutionFile.sln"
 }
 
 ## ----------------------------------------------------------------------------------------------------
-##   Targets 
+##   Target Tasks 
+##	 Top level targets used to run builds
 ## ----------------------------------------------------------------------------------------------------
-## Top level targets used to run builds
 
+Task Default -Depends BuildType-Debug, Compile
 
-Task Default -Depends Compile.Assembly
+Task Debug -Depends BuildType-Debug, Clean, Compile, Test
 
-Task Integration.Build -Depends Clean, Debug.Build, Compile.Assembly, Unit.Tests
+Task Release -Depends BuildType-Release, Clean, Compile, Test, Pack
 
-Task CI.Build -Depends Clean, Debug.Build, Compile.Assembly
+## ----------------------------------------------------------------------------------------------------
+##   Core Tasks 
+## ----------------------------------------------------------------------------------------------------
 
+Task Compile -Depends Init, GenerateVersionInfo {
 
+	foreach($projFile in (Get-ChildItem -Path $srcDir\*.csproj -recurse)){
+		$Name = [io.path]::GetFileNameWithoutExtension($projFile.Name)
+		Write-Header $Name
+		echo $projFile
 
+		# Set build log file location
+		$buildLogFile = "$buildDir\$Name.$buildType.log"
 
+		# set build output Dir
+		$outputDir = "$buildDir\$Name\$buildType"
+		echo $outputDir
 
-Task Compile.Assembly -Depends Requires.BuildType, Requires.MSBuild, Requires.BuildDir, GenerateVersionInfo {
-
-    exec { & $msbuildExe /p:Configuration=$buildType ".\BuildScriptLabs.sln" /verbosity:minimal /fileLogger /flp:verbosity=detailed`;logfile=$buildDir\BuildScriptLabs.txt }
+		exec { & $msbuildExe /p:Configuration=$buildType /p:OutputPath=$outputDir $projFile /verbosity:minimal /fileLogger /flp:verbosity=detailed`;logfile=$buildLogFile }
+	}
 }
 
-
-
-
-Task Clean {
-    remove-item $buildDir -recurse -force -erroraction silentlycontinue
-    
-    if (!(test-path $buildDir)) { 
-        $quiet = mkdir $buildDir 
-    }   
-}
-
-Task Unit.Tests -Depends Requires.XUnitConsole, Configure.TestResultsFolder, Compile.Assembly {
+Task Test -Depends Compile {
 
 	# Find all tests assemblies
 	$testAssemblies = Get-ChildItem -Path $buildDir\*.Tests\$buildType\*.Tests.dll
@@ -50,8 +55,8 @@ Task Unit.Tests -Depends Requires.XUnitConsole, Configure.TestResultsFolder, Com
 
 		$xmlReportFile = [System.IO.Path]::ChangeExtension($testAssembly.Name, ".xunit.xml")
 		$htmlReportFile = [System.IO.Path]::ChangeExtension($testAssembly.Name, ".xunit.html")
-		$xmlReportPath = join-path $testResultsFolder $xmlReportFile
-		$htmlReportPath = join-path $testResultsFolder $htmlReportFile
+		$xmlReportPath = join-path $buildDir $xmlReportFile
+		$htmlReportPath = join-path $buildDir $htmlReportFile
 
 		Write-Host "Test Assembly Path: $testAssembly"
 		Write-Host "Test XML Report Path: $xmlReportPath"
@@ -64,74 +69,109 @@ Task Unit.Tests -Depends Requires.XUnitConsole, Configure.TestResultsFolder, Com
 	}
 }
 
+Task Pack -Depends Compile{
 
-Task Release.Build {
-    $script:buildType = "Release"
-    Write-Host "Release build configured"
+	foreach($nuspecFile in (Get-ChildItem -Path $srcDir\*.nuspec -recurse)){
+		echo "$nuspecFile"
+		$Name = $nuspecFile.Name
+		Write-Header $Name
+
+		$packageVersion = "$version.$patchVersion"
+		$projectFile = [System.IO.Path]::ChangeExtension($nuspecFile, ".csproj")
+		echo $projectFile
+
+		exec{
+			 & $nugetExe pack $projectFile -version $packageVersion -outputdirectory $packagesFolder -basePath $buildDir -Suffix $suffixVersion -Build -IncludeReferencedProjects -properties Configuration=$buildType
+		}
+	}
 }
-
-Task Debug.Build {
-    $script:buildType = "Debug"
-    Write-Host "Debug build configured"
-}
-
-
-Task Configure.TestResultsFolder -Depends Requires.BuildDir {
-
-    $script:testResultsFolder = join-path $buildDir testing.results
-    Write-Host "Test results folder: $testResultsFolder"
-
-    if (test-path $testResultsFolder) {
-        remove-item $testResultsFolder -recurse -force -erroraction silentlycontinue    
-    }
-
-    mkdir $testResultsFolder | Out-Null    
-}
-
 
 ## ----------------------------------------------------------------------------------------------------
-##   Requires 
+##   Supporting Tasks 
 ##		Find tools required for Ci/CD pipeline
 ## ----------------------------------------------------------------------------------------------------
 
+Task Init -Depends InitBuildDir, InitPackagesDir, ConfirmBuildType, LocateMSBuild, LocateXUnitConsole, LocateNuGet
 
+Task Clean {
 
-Task Requires.BuildDir {
-    if (test-path $buildDir)
-    {
-        Write-Host "Build folder is: $buildDir"
+	if (test-path $buildDir) { echo "Locating: $buildDir" }
+
+	echo "Removing: $buildDir"
+    remove-item $buildDir -recurse -force -erroraction silentlycontinue
+    
+    if (!(test-path $buildDir)) { 
+		echo "Creating: $buildDir"
+        $quiet = mkdir $buildDir 
+    }   
+}
+
+Task BuildType-Release {
+    $script:buildType = "Release"
+    echo "Build Type = Release"
+}
+
+Task BuildType-Debug {
+    $script:buildType = "Debug"
+    echo "Build Type = Debug"
+}
+
+Task InitBuildDir {
+    if (test-path $buildDir){
+        echo "Build folder is: $buildDir"
     }
     else {
-        Write-Host "Creating build folder $buildDir"
+        echo "Creating build folder $buildDir"
         mkdir $buildDir | out-null
     }
 }
 
-Task Requires.BuildType {
+Task InitPackagesDir -Depends InitBuildDir {
+
+    $script:packagesFolder = join-path $buildDir Packages
+    echo "Package Dir: $packagesFolder"
+    if (test-path $packagesFolder) {
+        remove-item $packagesFolder -recurse -force -erroraction silentlycontinue    
+    }
+
+    mkdir $packagesFolder | Out-Null    
+}
+
+Task ConfirmBuildType {
     
     if ($buildType -eq $null) {
-        
         throw "No build type specified"
     }
 
-    Write-Host "$buildType build confirmed"
+    echo "$buildType build type confirmed!"
 }
 
-Task Requires.MSBuild {
+Task LocateMSBuild {
 
 	# Select cmdlet to get first item in collection if there are more than one match 
     $script:msbuildExe = 
         resolve-path "C:\Program Files (x86)\Microsoft Visual Studio\*\*\MSBuild\*\Bin\MSBuild.exe" | Select -First 1
 
-    if ($msbuildExe -eq $null)
-    {
+    if ($msbuildExe -eq $null){
         throw "Failed to find MSBuild"
     }
 
-    Write-Host "Found MSBuild here: $msbuildExe"
+    echo "MSBuild: $msbuildExe"
 }
 
-Task Requires.NuGet { 
+Task LocateXUnitConsole {
+
+    $script:xunitExe =
+        resolve-path ".\packages\xunit.runner.console.*\tools\net471\xunit.console.exe"
+
+    if ($xunitExe -eq $null){
+        throw "Failed to find XUnit.Console.exe"
+    }
+
+    echo "XUnit: $xunitExe"
+}
+
+Task LocateNuGet { 
 
     $script:nugetExe = (get-command nuget -ErrorAction SilentlyContinue).Source
 
@@ -139,48 +179,14 @@ Task Requires.NuGet {
         $script:nugetExe = resolve-path ".\packages\NuGet.CommandLine.*\tools\nuget.exe" -ErrorAction SilentlyContinue
     }
 
-    if ($nugetExe -eq $null)
-    {
+    if ($nugetExe -eq $null){
         throw "Failed to find nuget.exe"
     }
 
-    Write-Host "Found Nuget here: $nugetExe"
+    echo "Nuget: $nugetExe"
 }
 
-
-Task Requires.XUnitConsole {
-
-    $script:xunitExe =
-        resolve-path ".\packages\xunit.runner.console.*\tools\net471\xunit.console.exe"
-
-    if ($xunitExe -eq $null)
-    {
-        throw "Failed to find XUnit.Console.exe"
-    }
-
-    Write-Host "Found XUnit.Console here: $xunitExe"
-}
-
-## ----------------------------------------------------------------------------------------------------
-##   Utility Methods
-## ----------------------------------------------------------------------------------------------------
-
-formatTaskName { 
-    param($taskName) 
-
-    $divider = "-" * 70
-    return "`r`n$divider`r`n$taskName`r`n$divider"
-}
-
-function Write-Header($message) {
-    $divider = "-" * ($message.Length + 4)
-    Write-Output "`r`n$divider`r`n  $message`r`n$divider`r`n"
-}
-
-
-
-
-Task GenerateVersion {
+Task MakeVersion {
 
 	# get git last tag
 	$tag = exec{ & git describe --tags --abbrev=0} | Out-String
@@ -221,9 +227,8 @@ Task GenerateVersion {
 	echo "Suffix: $suffix" 
 }
 
-
-# Generate a VersionInfo.cs file for this build
-Task GenerateVersionInfo -Depends GenerateVersion {
+Task GenerateVersionInfo -Depends MakeVersion {
+	# Generate a VersionInfo.cs file for this build
     foreach($assemblyInfo in (get-childitem $srcDir\AssemblyInfo.cs -recurse)) {
         $versionInfo = Join-Path $assemblyInfo.Directory "VersionInfo.cs"
         set-content $versionInfo -encoding UTF8 `
@@ -236,4 +241,18 @@ Task GenerateVersionInfo -Depends GenerateVersion {
     }
 }
 
+## ----------------------------------------------------------------------------------------------------
+##   Utility Methods
+## ----------------------------------------------------------------------------------------------------
 
+formatTaskName { 
+    param($taskName) 
+
+    $divider = "-" * 70
+    return "`r`n$divider`r`n$taskName`r`n$divider"
+}
+
+function Write-Header($message) {
+    $divider = "-" * ($message.Length + 4)
+    Write-Output "`r`n$divider`r`n  $message`r`n$divider`r`n"
+}

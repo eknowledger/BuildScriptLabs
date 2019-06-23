@@ -1,0 +1,14 @@
+﻿<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>XPress</id>
+    <version>$version$</version>
+    <authors>ahmed@eknowledger.com</authors>
+    <owners>ahmed@eknowledger.com</owners>
+    <projectUrl>https://github.com/eknowledger/XPress</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Simple boolean expression language</description>
+    <copyright>Copyright 2019</copyright>
+    <tags>boolean expression language dsl</tags>
+  </metadata>
+</package>
