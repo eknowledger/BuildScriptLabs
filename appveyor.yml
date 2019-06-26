@@ -24,6 +24,7 @@ deploy:
   api_key:
     secure: jSR2vFuKiW2kycU/tdAsaT6lPf1uk8Bn2D/K3pWY5ZIHn/JNXvNOHwRp00Yfb7zB
   on:
+    branch: master
     appveyor_repo_tag: true
 
 - provider: NuGet
