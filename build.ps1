@@ -212,9 +212,13 @@ Task MakeVersion {
 	
 	$tag = $tag -replace "`n","" -replace "`r",""
 
+	# todo: I'm not sure what's happening the git branch seems to be missed up on appveyor, not sure why, tried to use some different git command still doesn't work correctly'
 	$script:version = $tag
 	echo "Version: $tag"
-	$branch = $(git branch -r)
+	
+	
+	$branch = "origin/master"
+	#$branch = $(git branch -r)
 	# Get current branch
 	#$branch = @{ $true = $env:APPVEYOR_REPO_BRANCH; $false = $(git symbolic-ref --short -q HEAD) }[$env:APPVEYOR_REPO_BRANCH -ne $NULL];
 	echo "remote branch = $env:APPVEYOR_REPO_BRANCH"
