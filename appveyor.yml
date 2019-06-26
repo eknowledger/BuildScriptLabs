@@ -33,5 +33,5 @@ deploy:
     secure: CNHgfJDRHjWAeAcL3WWpY9DpgEQLfYi9w1w0FoT7+Qc=
   skip_symbols: false
   on:
-     branch:master
+     branch: master
 
