@@ -211,9 +211,11 @@ Task MakeVersion {
 	$tag = $tag -replace "`n","" -replace "`r",""
 
 	$script:version = $tag
-	
+	echo "Version: $tag"
+
 	# Get current branch
 	$branch = @{ $true = $env:APPVEYOR_REPO_BRANCH; $false = $(git symbolic-ref --short -q HEAD) }[$env:APPVEYOR_REPO_BRANCH -ne $NULL];
+	echo "Branch: $branch"
 	# get total number of commit on the current branch
 	$localRevision = $(git rev-list --count $branch)
 	
@@ -230,10 +232,7 @@ Task MakeVersion {
 
 	$script:patchVersion = $revision 
 	$script:suffixVersion = $suffix
-
-
-	echo "Branch: $branch"
-	echo "Version: $tag"
+	
 	echo "Revision: $revision"
 	echo "Suffix: $suffix" 
 }
