@@ -27,11 +27,11 @@ deploy:
     appveyor_repo_tag: true
 
 - provider: NuGet
-    name: PreRelease
-    server: https://ci.appveyor.com/nuget/eknowledger
-    api_key:
-        secure: CNHgfJDRHjWAeAcL3WWpY9DpgEQLfYi9w1w0FoT7+Qc=
-    skip_symbols: false
-    on:
-        branch:master
+  name: PreRelease
+  server: https://ci.appveyor.com/nuget/eknowledger
+  api_key:
+    secure: CNHgfJDRHjWAeAcL3WWpY9DpgEQLfYi9w1w0FoT7+Qc=
+  skip_symbols: false
+  on:
+     branch:master
 
