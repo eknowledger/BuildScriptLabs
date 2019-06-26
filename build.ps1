@@ -207,6 +207,8 @@ Task MakeVersion {
 		Write-Host "No Tag Found, using default value"
       $result = "1.0.0"
     }
+
+	exec {& git branch -r}
 	
 	$tag = $tag -replace "`n","" -replace "`r",""
 
