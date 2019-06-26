@@ -19,13 +19,24 @@ properties {
 
 Task Default -Depends BuildType-Debug, Compile
 
-Task Debug -Depends BuildType-Debug, Clean, Compile, Test
+Task Debug -Depends BuildType-Debug, Clean, Restore, Compile, Test
 
-Task Release -Depends BuildType-Release, Clean, Compile, Test, Pack
+Task Release -Depends BuildType-Release, Clean, Restore, Compile, Test, Pack
 
 ## ----------------------------------------------------------------------------------------------------
 ##   Core Tasks 
 ## ----------------------------------------------------------------------------------------------------
+
+Task Restore -Depends LocateNuGet{
+	$nugetPackagesDir = "$baseDir\packages"
+	if (test-path $buildDir) { echo "Locating: $nugetPackagesDir" }
+
+	echo "Removing: $nugetPackagesDir"
+    remove-item $nugetPackagesDir -recurse -force -erroraction silentlycontinue
+	
+	echo "Restoring nuget pacakges to $nugetPackagesDir"
+	exec{& $nugetExe restore $solutionFilePath}
+}
 
 Task Compile -Depends Init, GenerateVersionInfo {
 
@@ -176,7 +187,7 @@ Task LocateNuGet {
     $script:nugetExe = (get-command nuget -ErrorAction SilentlyContinue).Source
 
     if ($nugetExe -eq $null) {
-        $script:nugetExe = resolve-path ".\packages\NuGet.CommandLine.*\tools\nuget.exe" -ErrorAction SilentlyContinue
+        $script:nugetExe = resolve-path ".\bootstrap\nuget.exe" -ErrorAction SilentlyContinue
     }
 
     if ($nugetExe -eq $null){
