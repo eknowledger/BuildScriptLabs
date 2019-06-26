@@ -1,0 +1,19 @@
+# appveyor file
+# http://www.appveyor.com/docs/appveyor-yml
+
+version: 0.1.2.{build}
+
+os: Visual Studio 2017
+
+pull_requests:
+  do_not_increment_build_number: true
+
+ nuget:
+  disable_publish_on_pr: true
+
+build_script:
+- ps: .\release.ps1
+
+artifacts:
+- path: .\build\Packages\*.nupkg
+  name: NuGet
