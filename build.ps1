@@ -227,8 +227,8 @@ Task MakeVersion {
 	#$branch = "origin/master"
 	#$branch = $(git branch -r)
 	# Get current branch
-	
-	$branch = @{ $true = "$(git remote)\$env:APPVEYOR_REPO_BRANCH"; $false = $(git symbolic-ref --short -q HEAD) }[$env:APPVEYOR_REPO_BRANCH -ne $NULL];
+	$remote = "$(git remote)";
+	$branch = @{ $true = $env:APPVEYOR_REPO_BRANCH; $false = $(git symbolic-ref --short -q HEAD) }[$env:APPVEYOR_REPO_BRANCH -ne $NULL];
 	echo "remote branch = $env:APPVEYOR_REPO_BRANCH"
 	echo "Branch: $branch"
 
