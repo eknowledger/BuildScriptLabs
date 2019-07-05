@@ -223,19 +223,36 @@ Task MakeVersion {
 	$branch = @{ $true = $env:APPVEYOR_REPO_BRANCH; $false = $(git symbolic-ref --short -q HEAD) }[$env:APPVEYOR_REPO_BRANCH -ne $NULL];
 	echo "remote branch = $env:APPVEYOR_REPO_BRANCH"
 	echo "Branch: $branch"
-	# get total number of commit on the current branch
-	$localRevision = $(git rev-list --count $branch)
+
+	
 	
 	#get last commit hash on the branch
 	$commitHash = $(git rev-parse --short $branch)
 
-	# compute revision number for assemblies
-	$revision = @{ $true = "{0:00000}" -f [convert]::ToInt32("0" + $env:APPVEYOR_BUILD_NUMBER, 10); $false = $localRevision }[$env:APPVEYOR_BUILD_NUMBER -ne $NULL];
-
 	# get version friendly name of Branch
 	$branchShort = "$($branch.Substring(0, [math]::Min(10,$branch.Length)))"
 
-	$suffix = @{ $true = "ci-$branchShort-$commitHash"; $false = "local-$branchShort-$commitHash"}[$env:APPVEYOR_BUILD_NUMBER -ne $NULL]
+	$revisionToken= "";
+
+	if ($env:APPVEYOR_BUILD_NUMBER -ne $NULL){
+		# CI Build
+
+		# compute revision number for assemblies
+		$revision = "$(""{0:00000}"" -f [convert]::ToInt32("0" + $env:APPVEYOR_BUILD_NUMBER, 10))";
+
+		$suffix = "ci-$branchShort-$commitHash"
+	} else {
+		# local Build
+		# get total number of commit on the current branch
+		$revision = $(git rev-list --count $branch)
+
+		$suffix = "local-$branchShort-$commitHash"
+	}
+
+	# compute revision number for assemblies
+	#$revision = @{ $true = "{0:00000}" -f [convert]::ToInt32("0" + $env:APPVEYOR_BUILD_NUMBER, 10); $false = $localRevision }[$env:APPVEYOR_BUILD_NUMBER -ne $NULL];
+
+	#$suffix = @{ $true = "ci-$branchShort-$commitHash"; $false = "local-$branchShort-$commitHash"}[$env:APPVEYOR_BUILD_NUMBER -ne $NULL]
 
 	$script:patchVersion = $revision 
 	$script:suffixVersion = $suffix
