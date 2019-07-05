@@ -7,8 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildScriptLabs", "BuildScr
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{CC18414F-4DC0-4998-A2D2-CAE338351CE4}"
 	ProjectSection(SolutionItems) = preProject
+		appveyor.yml = appveyor.yml
 		build.ps1 = build.ps1
-		run-build.ps1 = run-build.ps1
+		debug.ps1 = debug.ps1
+		release.ps1 = release.ps1
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildScriptLabs.Tests", "BuildScriptLabs.Tests\BuildScriptLabs.Tests.csproj", "{5AC09CCA-2B32-4FE6-8335-4E0C02E0445E}"
