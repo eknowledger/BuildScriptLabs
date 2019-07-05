@@ -204,7 +204,7 @@ Task MakeVersion {
 
 	if ([string]::IsNullOrEmpty($tag))
     {
-		Write-Host "No Tag Found, using default value"
+	  Write-Host "No Tag Found, using default value"
       $result = "1.0.0"
     }
 
@@ -215,6 +215,13 @@ Task MakeVersion {
 	# todo: I'm not sure what's happening the git branch seems to be missed up on appveyor, not sure why, tried to use some different git command still doesn't work correctly'
 	$script:version = $tag
 	echo "Version: $tag"
+
+
+	echo "......."
+	echo "git symbolic: $(git symbolic-ref --short -q HEAD)";
+	echo "env:APPVEYOR_REPO_BRANCH: $env:APPVEYOR_REPO_BRANCH";
+	echo "git branch: $(git branch -r)"
+	echo "......."
 	
 	
 	#$branch = "origin/master"
