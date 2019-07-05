@@ -235,7 +235,7 @@ Task MakeVersion {
 	
 	
 	#get last commit hash on the branch
-	$commitHash = $(git rev-parse --short $branch)
+	$commitHash = $(git rev-parse --short HEAD)
 
 	# get version friendly name of Branch
 	$branchShort = "$($branch.Substring(0, [math]::Min(10,$branch.Length)))"
